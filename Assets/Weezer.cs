@@ -2,14 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEngine;
-using KModkit;
 using Rnd = UnityEngine.Random;
-using Math = ExMath;
-using System.Security.Cryptography;
 
-public class Weezer : MonoBehaviour {
+public class Weezer : MonoBehaviour
+{
 
     public KMBombInfo Bomb;
     public KMAudio Audio;
@@ -127,21 +124,25 @@ public class Weezer : MonoBehaviour {
         }
     }
 
-    void OnDestroy () { //Shit you need to do when the bomb ends
-      
-    }
-
-    void Activate () { //Shit that should happen when the bomb arrives (factory)/Lights turn on
+    void OnDestroy()
+    { //Shit you need to do when the bomb ends
 
     }
 
-    void Start () { //Shit that you calculate, usually a majority if not all of the module
+    void Activate()
+    { //Shit that should happen when the bomb arrives (factory)/Lights turn on
+
+    }
+
+    void Start()
+    { //Shit that you calculate, usually a majority if not all of the module
 
         //pick four different random sounds to play
         for (int i = 0; i < 4; i++)
         {
             soundValid = false;
-            while (!soundValid) {
+            while (!soundValid)
+            {
                 randomSound = Rnd.Range(1, 23);
                 if (!soundsChosen.Contains(randomSound))
                 {
@@ -172,28 +173,73 @@ public class Weezer : MonoBehaviour {
         }
     }
 
-    void Update () { //Shit that happens at any point after initialization
+    void Update()
+    { //Shit that happens at any point after initialization
 
     }
 
-    void Solve () {
-       GetComponent<KMBombModule>().HandlePass();
+    void Solve()
+    {
+        GetComponent<KMBombModule>().HandlePass();
     }
 
-    void Strike () {
-       GetComponent<KMBombModule>().HandleStrike();
+    void Strike()
+    {
+        GetComponent<KMBombModule>().HandleStrike();
     }
 
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"Use !{0} play 1234 to play the sounds from left to right. Use !{0} submit 4231 to submit your answer.";
+    private readonly string TwitchHelpMessage = @"!{0} play 1 2 3 4 [Presses the buttons to play those sounds.] !{0} submit 4 2 3 1 [Submit the buttons in the order 4 3 2 1.]";
 #pragma warning restore 414
 
-    IEnumerator ProcessTwitchCommand (string Command) {
-       yield return null;
+    IEnumerator ProcessTwitchCommand(string Command)
+    {
+        Command = Command.Trim().ToLowerInvariant();
+        var list = new List<int>();
+        var cmds = Command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (cmds[0] == "play")
+        {
+            if (cmds.Length < 2)
+                yield break;
+            for (int i = 1; i < cmds.Length; i++)
+            {
+                if (!"1234".Contains(cmds[i]))
+                    yield break;
+                list.Add(cmds[i][0] - '1');
+            }
+            yield return null;
+            foreach (var btn in list)
+            {
+                buttons[btn].OnInteract();
+                yield return new WaitForSeconds(3f);
+            }
+            yield break;
+        }
+        if (cmds.Length != 5 || cmds[0] != "submit")
+            yield break;
+        list.Add(4);
+        for (int i = 1; i < 5; i++)
+        {
+            if (!"1234".Contains(cmds[i]))
+                yield break;
+            list.Add(cmds[i][0] - '1');
+        }
+        if (list.Distinct().Count() != 5)
+        {
+            yield return "sendtochaterror There are duplicate button presses. Command ignored.";
+            yield break;
+        }
+        yield return null;
+        foreach (var btn in list)
+        {
+            buttons[btn].OnInteract();
+            yield return new WaitForSeconds(0.1f);
+        }
     }
 
-    IEnumerator TwitchHandleForcedSolve () {
-      yield return null;
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        yield return null;
         Solve(); // don't feel like making an autosolver for a module probably not worth enough points for it
     }
 }
